@@ -1,0 +1,73 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract BlockchainDeveloperToolkit is Ownable {
+    struct Project {
+        string name;
+        address owner;
+        string description;
+        string[] resources;
+    }
+
+    mapping(uint256 => Project) public projects;
+    uint256 public totalProjects;
+
+    // Events
+    event ProjectAdded(uint256 indexed projectId, string name, address indexed owner);
+    event ResourceAdded(uint256 indexed projectId, string resource);
+    event ProjectRemoved(uint256 indexed projectId);
+
+    // Add a new project
+    function addProject(string memory name, string memory description) external {
+        uint256 projectId = totalProjects++;
+        projects[projectId] = Project({
+            name: name,
+            owner: msg.sender,
+            description: description,
+            resources: new string 
+        });
+
+        emit ProjectAdded(projectId, name, msg.sender);
+    }
+
+    // Add a resource to a project
+    function addResource(uint256 projectId, string memory resource) external {
+        require(projectId < totalProjects, "Project does not exist");
+        require(projects[projectId].owner == msg.sender, "Only project owner can add resources");
+
+        projects[projectId].resources.push(resource);
+
+        emit ResourceAdded(projectId, resource);
+    }
+
+    // Remove a project (only owner)
+    function removeProject(uint256 projectId) external onlyOwner {
+        require(projectId < totalProjects, "Project does not exist");
+
+        delete projects[projectId];
+
+        emit ProjectRemoved(projectId);
+    }
+
+    // Get total number of projects
+    function getTotalProjects() external view returns (uint256) {
+        return totalProjects;
+    }
+
+    // Get resources of a project
+    function getResources(uint256 projectId) external view returns (string[] memory) {
+        require(projectId < totalProjects, "Project does not exist");
+
+        return projects[projectId].resources;
+    }
+
+    // Withdraw ETH from the contract (only owner)
+    function withdraw() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    // Receive function to accept ETH payments
+    receive() external payable {}
+}
